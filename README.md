@@ -116,5 +116,3 @@ Si falta alguna, la aplicación funciona igual con su alternativa.
 ## Licencia
 
 © 2026 **@Mitsnightw** · Todos los derechos reservados.
-
-Mithyia-Haven utiliza [Slint](https://slint.dev), que tiene su propia licencia.
