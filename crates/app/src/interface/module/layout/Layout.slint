@@ -1,0 +1,296 @@
+import { Estilo } from "../../../ui/LoginStyle.slint";
+import { LayoutEstilo } from "LayoutStyle.slint";
+
+export struct OpcionMenu {
+    id: string,
+    titulo: string,
+}
+
+component NodoViento inherits Rectangle {
+    in property <string> titulo;
+    in property <bool> activa;
+    callback pulsado();
+
+    width: LayoutEstilo.ancho-nodo;
+    height: 52px;
+
+    Text {
+        y: 0;
+        width: parent.width;
+        height: 16px;
+        text: root.titulo;
+        color: root.activa || area.has-hover ? Estilo.marfil : Estilo.texto-suave;
+        font-size: 11px;
+        letter-spacing: 2px;
+        horizontal-alignment: center;
+        animate color { duration: 200ms; }
+    }
+
+    if root.activa : Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 36px - self.height / 2;
+        width: LayoutEstilo.halo;
+        height: LayoutEstilo.halo;
+        border-radius: self.width / 2;
+        border-width: 1px;
+        border-color: Estilo.oro.transparentize(0.5);
+    }
+
+    Rectangle {
+        property <length> tamano: root.activa ? LayoutEstilo.nodo-activo : area.has-hover ? LayoutEstilo.nodo-hover : LayoutEstilo.nodo;
+        x: (parent.width - self.width) / 2;
+        y: 36px - self.height / 2;
+        width: self.tamano;
+        height: self.tamano;
+        border-radius: self.width / 2;
+        background: root.activa ? Estilo.oro : Estilo.noche;
+        border-width: root.activa ? 0px : 1.5px;
+        border-color: Estilo.viento;
+        animate width, height, background { duration: 250ms; easing: ease-out; }
+    }
+
+    area := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.pulsado();
+        }
+    }
+}
+
+export component Layout inherits Rectangle {
+    in property <[OpcionMenu]> opciones;
+    in property <int> activa;
+    in property <string> nombre-usuario;
+    in property <string> inicial-usuario;
+    in-out property <string> busqueda;
+    callback opcion-seleccionada(int);
+    callback busqueda-editada(string);
+    callback cerrar-sesion();
+
+    property <float> tiempo: animation-tick() / 1ms;
+
+    pure function altura(u: float, fase: float) -> length {
+        return corriente.height * (0.58 + 0.18 * Math.sin((u * 450 + fase) * 1deg));
+    }
+
+    height: LayoutEstilo.alto;
+    background: LayoutEstilo.fondo;
+
+    Text {
+        x: 28px;
+        text: "MITHYIA";
+        color: Estilo.marfil;
+        font-size: 18px;
+        letter-spacing: 6px;
+    }
+
+    corriente := Rectangle {
+        x: LayoutEstilo.inicio-corriente;
+        y: 0;
+        width: parent.width - LayoutEstilo.inicio-corriente - LayoutEstilo.ancho-derecha;
+        height: parent.height;
+
+        for k in 120 : Rectangle {
+            property <float> u: k / 119;
+            x: self.u * corriente.width - 1px;
+            y: root.altura(self.u, 34) - 1px;
+            width: 2px;
+            height: 2px;
+            border-radius: 1px;
+            background: Estilo.viento;
+            opacity: 0.55;
+        }
+
+        for k in 120 : Rectangle {
+            property <float> u: k / 119;
+            x: self.u * corriente.width - 1px;
+            y: root.altura(self.u, 70) + 6px;
+            width: 2px;
+            height: 2px;
+            border-radius: 1px;
+            background: Estilo.viento;
+            opacity: 0.18;
+        }
+
+        for p in 8 : Rectangle {
+            property <float> u: Math.mod(root.tiempo / 8000 + p * 0.125, 1.0);
+            x: self.u * corriente.width - 2px;
+            y: root.altura(self.u, 34) - 2px;
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background: Estilo.semilla;
+            opacity: Math.min(1, Math.min(self.u, 1 - self.u) * 6) * 0.8;
+        }
+
+        for opcion[i] in root.opciones : NodoViento {
+            property <float> u: (i + 0.5) / root.opciones.length;
+            x: self.u * corriente.width - self.width / 2;
+            y: root.altura(self.u, 34) - 36px;
+            titulo: opcion.titulo;
+            activa: i == root.activa;
+            pulsado => {
+                root.opcion-seleccionada(i);
+            }
+        }
+    }
+
+    HorizontalLayout {
+        x: parent.width - LayoutEstilo.ancho-derecha;
+        y: 0;
+        width: LayoutEstilo.ancho-derecha;
+        height: parent.height;
+        padding-right: 20px;
+        spacing: 12px;
+        alignment: end;
+
+        VerticalLayout {
+            alignment: center;
+
+            Rectangle {
+                width: LayoutEstilo.ancho-buscador;
+                height: 36px;
+                border-radius: Estilo.radio;
+                background: Estilo.campo;
+                border-width: 1px;
+                border-color: buscador.has-focus ? Estilo.viento : Estilo.borde;
+                animate border-color { duration: 200ms; }
+
+                Path {
+                    x: 10px;
+                    width: 16px;
+                    height: 16px;
+                    viewbox-width: 24;
+                    viewbox-height: 24;
+                    stroke: Estilo.texto-suave;
+                    stroke-width: 1.5px;
+                    commands: "M 16 10 A 6 6 0 1 1 4 10 A 6 6 0 1 1 16 10 Z M 14.5 14.5 L 20 20";
+                }
+
+                Text {
+                    x: 34px;
+                    text: "Buscar";
+                    color: Estilo.texto-suave;
+                    font-size: 13px;
+                    visible: root.busqueda == "";
+                }
+
+                buscador := TextInput {
+                    x: 34px;
+                    width: parent.width - 44px;
+                    height: parent.height;
+                    vertical-alignment: center;
+                    color: Estilo.marfil;
+                    font-size: 13px;
+                    single-line: true;
+                    text <=> root.busqueda;
+                    edited => {
+                        root.busqueda-editada(self.text);
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+
+            chip := Rectangle {
+                width: fila.preferred-width;
+                height: 42px;
+                border-radius: Estilo.radio;
+                background: area-usuario.has-hover ? Estilo.borde.transparentize(0.6) : transparent;
+                animate background { duration: 150ms; }
+
+                fila := HorizontalLayout {
+                    padding-left: 8px;
+                    padding-right: 10px;
+                    spacing: 10px;
+
+                    VerticalLayout {
+                        alignment: center;
+
+                        Rectangle {
+                            width: LayoutEstilo.avatar;
+                            height: LayoutEstilo.avatar;
+                            border-radius: self.width / 2;
+                            background: Estilo.rosa;
+                            border-width: 1px;
+                            border-color: Estilo.oro;
+
+                            Text {
+                                text: root.inicial-usuario;
+                                color: Estilo.oro;
+                                font-size: 14px;
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: root.nombre-usuario;
+                        color: Estilo.marfil;
+                        font-size: 13px;
+                        vertical-alignment: center;
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+
+                        Path {
+                            width: 12px;
+                            height: 12px;
+                            viewbox-width: 24;
+                            viewbox-height: 24;
+                            stroke: Estilo.texto-suave;
+                            stroke-width: 2px;
+                            commands: "M 6 9 L 12 15 L 18 9";
+                        }
+                    }
+                }
+
+                area-usuario := TouchArea {
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => {
+                        menu.show();
+                    }
+                }
+
+                menu := PopupWindow {
+                    x: chip.width - LayoutEstilo.ancho-menu;
+                    y: chip.height + 6px;
+                    width: LayoutEstilo.ancho-menu;
+
+                    Rectangle {
+                        background: Estilo.panel;
+                        border-radius: Estilo.radio;
+                        border-width: 1px;
+                        border-color: Estilo.borde;
+
+                        VerticalLayout {
+                            padding: 6px;
+
+                            Rectangle {
+                                height: 36px;
+                                border-radius: Estilo.radio;
+                                background: area-salir.has-hover ? Estilo.borde.transparentize(0.5) : transparent;
+
+                                Text {
+                                    x: 12px;
+                                    text: "Cerrar sesión";
+                                    color: Estilo.marfil;
+                                    font-size: 13px;
+                                }
+
+                                area-salir := TouchArea {
+                                    mouse-cursor: MouseCursor.pointer;
+                                    clicked => {
+                                        root.cerrar-sesion();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

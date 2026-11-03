@@ -1,0 +1,101 @@
+import { Estilo } from "../../../../ui/LoginStyle.slint";
+import { LibraryBodyEstilo } from "LibraryBodyStyle.slint";
+import { CardGame } from "01-CardGame/01-CardGame.slint";
+import { CardGame02 } from "02-CardGame/02-CardGame.slint";
+
+export struct Estrella {
+    x: float,
+    y: float,
+    tamano: float,
+    ultima: bool,
+}
+
+export struct Juego {
+    id: string,
+    titulo: string,
+    portada: image,
+    acento: color,
+    ultima-vez: string,
+    horas: string,
+    diseno: int,
+    banner: image,
+    logo: image,
+    personaje: image,
+    generos: string,
+    descripcion: string,
+    desarrollador: string,
+    lanzamiento: string,
+    plataforma: string,
+    tamano: string,
+    tiempo-total: string,
+    ultima-sesion: string,
+    sesiones: string,
+    en-vivo: string,
+    ejecutable: string,
+    argumentos: string,
+    notas: string,
+    estrellas: [Estrella],
+}
+
+export component LibraryBody inherits Rectangle {
+    in property <[Juego]> juegos;
+    callback iniciar-juego(int);
+    callback abrir-juego(int, length, length, length, length);
+
+    property <length> ancho-util: self.width - LibraryBodyEstilo.margen-halo * 2;
+    property <length> ancho-tarjeta: (root.ancho-util - LibraryBodyEstilo.separacion * (LibraryBodyEstilo.columnas - 1)) / LibraryBodyEstilo.columnas;
+    property <length> alto-tarjeta: root.ancho-tarjeta * LibraryBodyEstilo.proporcion;
+    property <int> filas: Math.ceil(root.juegos.length / LibraryBodyEstilo.columnas);
+
+    if root.juegos.length == 0 : Text {
+        text: "Tu biblioteca está vacía";
+        color: Estilo.texto-suave;
+        font-size: 14px;
+    }
+
+    Flickable {
+        width: parent.width;
+        height: parent.height;
+        content-width: self.width;
+        content-height: root.filas * root.alto-tarjeta + Math.max(root.filas - 1, 0) * LibraryBodyEstilo.separacion + LibraryBodyEstilo.margen-halo * 2;
+
+        for juego[i] in root.juegos : Rectangle {
+            x: LibraryBodyEstilo.margen-halo + Math.mod(i, LibraryBodyEstilo.columnas) * (root.ancho-tarjeta + LibraryBodyEstilo.separacion);
+            y: LibraryBodyEstilo.margen-halo + Math.floor(i / LibraryBodyEstilo.columnas) * (root.alto-tarjeta + LibraryBodyEstilo.separacion);
+            width: root.ancho-tarjeta;
+            height: root.alto-tarjeta;
+
+            if juego.diseno == 2 : CardGame02 {
+                width: parent.width;
+                height: parent.height;
+                titulo: juego.titulo;
+                portada: juego.portada;
+                acento: juego.acento;
+                ultima-vez: juego.ultima-vez;
+                horas: juego.horas;
+                iniciar => {
+                    root.iniciar-juego(i);
+                }
+                abrir => {
+                    root.abrir-juego(i, parent.absolute-position.x, parent.absolute-position.y, parent.width, parent.height);
+                }
+            }
+
+            if juego.diseno != 2 : CardGame {
+                width: parent.width;
+                height: parent.height;
+                titulo: juego.titulo;
+                portada: juego.portada;
+                acento: juego.acento;
+                ultima-vez: juego.ultima-vez;
+                horas: juego.horas;
+                iniciar => {
+                    root.iniciar-juego(i);
+                }
+                abrir => {
+                    root.abrir-juego(i, parent.absolute-position.x, parent.absolute-position.y, parent.width, parent.height);
+                }
+            }
+        }
+    }
+}

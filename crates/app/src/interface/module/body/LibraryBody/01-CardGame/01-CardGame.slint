@@ -1,0 +1,203 @@
+import { Estilo } from "../../../../../ui/LoginStyle.slint";
+import { CardGameEstilo } from "01-CardGameStyle.slint";
+
+export component CardGame inherits Rectangle {
+    in property <string> titulo;
+    in property <image> portada;
+    in property <color> acento;
+    in property <string> ultima-vez;
+    in property <string> horas;
+    callback iniciar();
+    callback abrir();
+
+    property <bool> encima: area.has-hover || area-jugar.has-hover;
+    property <float> cursor-x: root.encima ? area.mouse-x / tarjeta.width - 0.5 : 0;
+    property <float> cursor-y: root.encima ? area.mouse-y / tarjeta.height - 0.5 : 0;
+    property <length> extra-x: self.width * CardGameEstilo.paralaje;
+    property <length> extra-y: self.height * CardGameEstilo.paralaje;
+    property <length> inicio-texto: root.encima ? CardGameEstilo.alto-pie + CardGameEstilo.margen-texto : CardGameEstilo.margen-texto;
+    property <string> detalle: root.ultima-vez + (root.ultima-vez != "" && root.horas != "" ? " · " : "") + root.horas;
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        border-radius: CardGameEstilo.radio;
+        background: Estilo.campo;
+        drop-shadow-offset-y: 6px;
+        drop-shadow-blur: root.encima ? CardGameEstilo.sombra-activa : CardGameEstilo.sombra-reposo;
+        drop-shadow-color: root.encima ? root.acento.transparentize(0.55) : Estilo.noche.transparentize(0.4);
+        animate drop-shadow-blur, drop-shadow-color { duration: 300ms; easing: ease-out; }
+    }
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        border-radius: CardGameEstilo.radio;
+        background: Estilo.campo;
+        clip: true;
+
+        Rectangle {
+            x: -parent.width - root.cursor-x * parent.width;
+            y: -parent.height - root.cursor-y * parent.height;
+            width: parent.width * 3;
+            height: parent.height * 3;
+            background: @linear-gradient(135deg, #7FD3F7 0%, #E8A6F0 20%, #F2D27A 40%, #A6F0C8 60%, #7FD3F7 80%, #E8A6F0 100%);
+            opacity: root.encima ? 1 : CardGameEstilo.holo-reposo;
+            animate x, y { duration: 200ms; easing: ease-out; }
+            animate opacity { duration: 250ms; }
+        }
+
+        tarjeta := Rectangle {
+            x: CardGameEstilo.grosor-borde;
+            y: CardGameEstilo.grosor-borde;
+            width: parent.width - CardGameEstilo.grosor-borde * 2;
+            height: parent.height - CardGameEstilo.grosor-borde * 2;
+            border-radius: CardGameEstilo.radio - CardGameEstilo.grosor-borde;
+            background: Estilo.campo;
+            clip: true;
+
+            Image {
+                width: parent.width + root.extra-x;
+                height: parent.height + root.extra-y;
+                x: -root.extra-x / 2 - root.cursor-x * root.extra-x;
+                y: -root.extra-y / 2 - root.cursor-y * root.extra-y;
+                source: root.portada;
+                image-fit: cover;
+                animate x, y { duration: 160ms; easing: ease-out; }
+            }
+
+            Rectangle {
+                x: -parent.width - root.cursor-x * parent.width;
+                y: -parent.height - root.cursor-y * parent.height;
+                width: parent.width * 3;
+                height: parent.height * 3;
+                background: @linear-gradient(135deg, #7FD3F7 0%, #E8A6F0 20%, #F2D27A 40%, #A6F0C8 60%, #7FD3F7 80%, #E8A6F0 100%);
+                opacity: root.encima ? CardGameEstilo.holo-velo : 0;
+                animate x, y { duration: 200ms; easing: ease-out; }
+                animate opacity { duration: 250ms; }
+            }
+
+            Rectangle {
+                x: area.mouse-x - self.width / 2;
+                y: area.mouse-y - self.height / 2;
+                width: CardGameEstilo.destello;
+                height: CardGameEstilo.destello;
+                background: @radial-gradient(circle, #ffffff30 0%, #ffffff10 35%, #ffffff00 70%);
+                opacity: root.encima ? 1 : 0;
+                animate opacity { duration: 250ms; }
+            }
+
+            Path {
+                x: root.encima ? parent.width : -self.width;
+                y: 0;
+                width: parent.width * CardGameEstilo.ancho-barrido;
+                height: parent.height;
+                viewbox-width: 100;
+                viewbox-height: 100;
+                fill: #ffffff1c;
+                commands: "M 60 0 L 100 0 L 40 100 L 0 100 Z";
+                opacity: root.encima ? 1 : 0;
+                animate x { duration: 800ms; easing: ease-out; }
+                animate opacity { duration: 150ms; }
+            }
+
+            for i in 4 : Path {
+                property <length> destino: parent.height * (0.2 + i * 0.1);
+                x: parent.width * (0.66 + Math.mod(i * 0.09, 0.26));
+                y: root.encima ? self.destino : parent.height - 20px;
+                width: 12px;
+                height: 12px;
+                viewbox-width: 20;
+                viewbox-height: 20;
+                stroke: Estilo.semilla;
+                stroke-width: 1px;
+                commands: "M 10 20 L 10 10 M 10 10 L 4 4 M 10 10 L 16 4 M 10 10 L 10 1 M 10 10 L 2 9 M 10 10 L 18 9";
+                opacity: root.encima ? 0.85 : 0;
+                animate y { duration: 1600ms; easing: ease-out; }
+                animate opacity { duration: 400ms; }
+            }
+
+            Rectangle {
+                y: parent.height - CardGameEstilo.alto-pie;
+                width: parent.width;
+                height: CardGameEstilo.alto-pie;
+                background: Estilo.noche.transparentize(root.encima ? 0.15 : 0.3);
+                animate background { duration: 250ms; }
+            }
+
+            Text {
+                x: root.inicio-texto;
+                y: parent.height - CardGameEstilo.alto-pie + 12px;
+                text: root.titulo;
+                color: Estilo.marfil;
+                font-size: 15px;
+                letter-spacing: 2px;
+                animate x { duration: 250ms; easing: ease-out; }
+            }
+
+            Text {
+                x: root.inicio-texto;
+                y: parent.height - CardGameEstilo.alto-pie + 33px;
+                text: root.detalle;
+                color: Estilo.texto-suave;
+                font-size: 11px;
+                letter-spacing: 1px;
+                opacity: root.encima ? 1 : 0;
+                animate x { duration: 250ms; easing: ease-out; }
+                animate opacity { duration: 250ms; }
+            }
+
+            Rectangle {
+                x: root.inicio-texto;
+                y: parent.height - 10px;
+                width: root.encima ? CardGameEstilo.linea-activa : CardGameEstilo.linea-reposo;
+                height: 2px;
+                border-radius: 1px;
+                background: root.acento;
+                animate x, width { duration: 250ms; easing: ease-out; }
+            }
+
+            area := TouchArea {
+                mouse-cursor: MouseCursor.pointer;
+                clicked => {
+                    root.abrir();
+                }
+            }
+
+            Rectangle {
+                x: 0;
+                y: parent.height - CardGameEstilo.alto-pie;
+                width: CardGameEstilo.alto-pie;
+                height: CardGameEstilo.alto-pie;
+                background: area-jugar.has-hover ? Estilo.oro.transparentize(0.78) : Estilo.noche.transparentize(0.2);
+                opacity: root.encima ? 1 : 0;
+                animate opacity, background { duration: 200ms; }
+
+                Rectangle {
+                    x: parent.width - self.width;
+                    width: 1px;
+                    height: parent.height;
+                    background: Estilo.oro.transparentize(0.6);
+                }
+
+                Path {
+                    x: (parent.width - self.width) / 2 + 2px;
+                    width: parent.width * 0.32;
+                    height: self.width;
+                    viewbox-width: 24;
+                    viewbox-height: 24;
+                    fill: Estilo.oro;
+                    commands: "M 6 3 L 21 12 L 6 21 Z";
+                }
+
+                area-jugar := TouchArea {
+                    enabled: root.encima;
+                    mouse-cursor: MouseCursor.pointer;
+                    clicked => {
+                        root.iniciar();
+                    }
+                }
+            }
+        }
+    }
+}

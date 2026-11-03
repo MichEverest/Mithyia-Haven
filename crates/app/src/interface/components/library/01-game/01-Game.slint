@@ -1,0 +1,217 @@
+import { Estilo } from "../../../../ui/LoginStyle.slint";
+import { Game01Estilo } from "01-GameStyle.slint";
+import { Juego } from "../../../module/body/LibraryBody/LibraryBody.slint";
+
+export component Game01 inherits Rectangle {
+    in property <Juego> juego;
+    in property <float> progreso;
+    callback volver();
+    callback jugar();
+
+    property <float> interfaz: Math.clamp((root.progreso - 0.55) / 0.45, 0, 1);
+    property <float> cursor-x: area.has-hover ? area.mouse-x / root.width - 0.5 : 0;
+    property <float> cursor-y: area.has-hover ? area.mouse-y / root.height - 0.5 : 0;
+    property <bool> tiene-banner: root.juego.banner.width > 0;
+    property <bool> tiene-logo: root.juego.logo.width > 0;
+    property <bool> tiene-personaje: root.juego.personaje.width > 0;
+    property <float> tiempo: animation-tick() / 1ms;
+    property <string> detalle: root.juego.ultima-vez + (root.juego.ultima-vez != "" && root.juego.horas != "" ? " · " : "") + root.juego.horas;
+
+    background: Estilo.noche;
+    clip: true;
+
+    area := TouchArea {
+        width: parent.width;
+        height: parent.height;
+    }
+
+    Image {
+        property <length> extra-x: root.width * Game01Estilo.paralaje-fondo;
+        property <length> extra-y: root.height * Game01Estilo.paralaje-fondo;
+        x: -self.extra-x / 2 - root.cursor-x * self.extra-x;
+        y: -self.extra-y / 2 - root.cursor-y * self.extra-y;
+        width: root.width + self.extra-x;
+        height: root.height + self.extra-y;
+        source: root.tiene-banner ? root.juego.banner : root.juego.portada;
+        image-fit: cover;
+        animate x, y { duration: 220ms; easing: ease-out; }
+    }
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: @linear-gradient(90deg, #0D1A1EE6 0%, #0D1A1E99 40%, #0D1A1E00 72%);
+    }
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: @linear-gradient(180deg, #0D1A1E00 45%, #0D1A1EF5 100%);
+    }
+
+    for i in 40 : Rectangle {
+        property <float> fase: Math.mod(i * 0.371, 1.0);
+        property <float> caida: Math.mod(root.tiempo / (7000 + Math.mod(i * 1291, 6000)) + self.fase, 1.0);
+        x: root.width * Math.mod(i * 0.137, 1.0) + Math.sin(root.tiempo * 0.05deg + i * 37deg) * 14px;
+        y: -10px + self.caida * (root.height + 20px);
+        width: 2px + Math.mod(i * 3, 3) * 1px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: #FFFFFF;
+        opacity: (0.35 + Math.mod(i * 0.19, 0.5)) * root.interfaz;
+    }
+
+    if root.tiene-personaje : Image {
+        property <length> extra: root.width * Game01Estilo.paralaje-personaje;
+        width: root.width * Game01Estilo.ancho-personaje;
+        height: root.height * 1.08;
+        x: root.width - self.width + root.width * 0.02 - root.cursor-x * self.extra + (1 - root.interfaz) * Game01Estilo.desplazamiento-entrada;
+        y: root.height - self.height + root.height * 0.06 - root.cursor-y * self.extra * 0.5;
+        source: root.juego.personaje;
+        image-fit: contain;
+        opacity: root.interfaz;
+        animate x, y { duration: 220ms; easing: ease-out; }
+    }
+
+    Rectangle {
+        x: Game01Estilo.margen - (1 - root.interfaz) * Game01Estilo.desplazamiento-entrada;
+        y: root.height * 0.34;
+        width: root.width * 0.5;
+        height: root.height * 0.62;
+        opacity: root.interfaz;
+
+        VerticalLayout {
+            alignment: start;
+            spacing: 16px;
+
+            if root.tiene-logo : Image {
+                width: Game01Estilo.ancho-logo;
+                height: Game01Estilo.alto-logo;
+                source: root.juego.logo;
+                image-fit: contain;
+            }
+
+            if !root.tiene-logo : Text {
+                text: root.juego.titulo;
+                color: Estilo.marfil;
+                font-size: Game01Estilo.tamano-titulo;
+                letter-spacing: 8px;
+            }
+
+            HorizontalLayout {
+                alignment: start;
+
+                Rectangle {
+                    width: 80px;
+                    height: 2px;
+                    background: root.juego.acento;
+                }
+            }
+
+            if root.detalle != "" : Text {
+                text: root.detalle;
+                color: Estilo.texto-suave;
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+
+            Rectangle {
+                height: 12px;
+            }
+
+            HorizontalLayout {
+                alignment: start;
+
+                Rectangle {
+                    width: Game01Estilo.ancho-jugar;
+                    height: Game01Estilo.alto-jugar;
+                    border-radius: Estilo.radio;
+                    background: area-jugar.pressed ? root.juego.acento.darker(0.15) : area-jugar.has-hover ? root.juego.acento.brighter(0.1) : root.juego.acento;
+                    drop-shadow-blur: area-jugar.has-hover ? 24px : 12px;
+                    drop-shadow-color: root.juego.acento.transparentize(0.5);
+                    animate background, drop-shadow-blur { duration: 180ms; }
+
+                    HorizontalLayout {
+                        alignment: center;
+                        spacing: 12px;
+
+                        VerticalLayout {
+                            alignment: center;
+
+                            Path {
+                                width: 16px;
+                                height: 16px;
+                                viewbox-width: 24;
+                                viewbox-height: 24;
+                                fill: Estilo.tinta;
+                                commands: "M 6 3 L 21 12 L 6 21 Z";
+                            }
+                        }
+
+                        Text {
+                            text: "JUGAR";
+                            color: Estilo.tinta;
+                            font-size: 16px;
+                            letter-spacing: 4px;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    area-jugar := TouchArea {
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => {
+                            root.jugar();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        x: 28px;
+        y: 24px;
+        width: fila-volver.preferred-width;
+        height: Game01Estilo.alto-volver;
+        border-radius: self.height / 2;
+        background: area-volver.has-hover ? Estilo.noche.transparentize(0.2) : Estilo.noche.transparentize(0.45);
+        border-width: 1px;
+        border-color: root.juego.acento.transparentize(0.5);
+        opacity: root.interfaz;
+        animate background { duration: 150ms; }
+
+        fila-volver := HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 16px;
+            spacing: 8px;
+
+            VerticalLayout {
+                alignment: center;
+
+                Path {
+                    width: 14px;
+                    height: 14px;
+                    viewbox-width: 24;
+                    viewbox-height: 24;
+                    stroke: Estilo.marfil;
+                    stroke-width: 2px;
+                    commands: "M 15 5 L 8 12 L 15 19";
+                }
+            }
+
+            Text {
+                text: "Biblioteca";
+                color: Estilo.marfil;
+                font-size: 12px;
+                vertical-alignment: center;
+            }
+        }
+
+        area-volver := TouchArea {
+            mouse-cursor: MouseCursor.pointer;
+            clicked => {
+                root.volver();
+            }
+        }
+    }
+}

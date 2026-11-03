@@ -1,0 +1,3 @@
+A global design for the cards, along with their underlying logic,
+will be added here; this logic will apply generally to all games that are added and selected.
+This will be implemented in the future; for now, the cards are simply numbered.

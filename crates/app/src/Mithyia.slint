@@ -1,0 +1,147 @@
+import { Estilo } from "ui/LoginStyle.slint";
+import { LoginUi, Trazo } from "ui/LoginUi.slint";
+import { Layout, OpcionMenu } from "interface/module/layout/Layout.slint";
+import { Body } from "interface/module/body/Body.slint";
+import { Juego, Estrella } from "interface/module/body/LibraryBody/LibraryBody.slint";
+import { Game01 } from "interface/components/library/01-game/01-Game.slint";
+import { Game02 } from "interface/components/library/02-game/02-Game.slint";
+
+export { Trazo, OpcionMenu, Juego, Estrella }
+
+export component AppWindow inherits Window {
+    title: "Mithyia";
+    preferred-width: 1280px;
+    preferred-height: 800px;
+    min-width: 960px;
+    min-height: 600px;
+    background: Estilo.noche;
+
+    in property <bool> sesion-iniciada;
+
+    in-out property <string> usuario;
+    in-out property <string> contrasena;
+    in property <string> mensaje-error;
+    in property <bool> cargando;
+    in property <[Trazo]> trazos;
+    in property <int> encendidos;
+    in property <bool> acceso-concedido;
+    callback usuario-editado(string);
+    callback contrasena-editada(string);
+    callback iniciar-sesion(string, string);
+
+    in property <[OpcionMenu]> opciones;
+    in-out property <int> opcion-activa;
+    in property <string> nombre-usuario;
+    in property <string> inicial-usuario;
+    in-out property <string> busqueda;
+    callback opcion-seleccionada(int);
+    callback busqueda-editada(string);
+    callback cerrar-sesion();
+
+    in property <float> progreso-transicion: 1;
+    in property <int> direccion-transicion: 1;
+
+    in property <[Juego]> juegos;
+    in-out property <int> juego-abierto: -1;
+    in property <length> origen-x;
+    in property <length> origen-y;
+    in property <length> origen-ancho;
+    in property <length> origen-alto;
+    in property <float> progreso-apertura;
+    callback iniciar-juego(int);
+    callback abrir-juego(int, length, length, length, length);
+    callback cerrar-juego();
+
+    property <bool> juego-visible: root.sesion-iniciada && root.juego-abierto >= 0;
+    property <int> diseno-abierto: root.juego-visible ? root.juegos[root.juego-abierto].diseno : 0;
+
+    if !root.sesion-iniciada : LoginUi {
+        width: parent.width;
+        height: parent.height;
+        usuario <=> root.usuario;
+        contrasena <=> root.contrasena;
+        mensaje-error: root.mensaje-error;
+        cargando: root.cargando;
+        trazos: root.trazos;
+        encendidos: root.encendidos;
+        acceso-concedido: root.acceso-concedido;
+        usuario-editado(texto) => {
+            root.usuario-editado(texto);
+        }
+        contrasena-editada(texto) => {
+            root.contrasena-editada(texto);
+        }
+        iniciar-sesion(nombre, clave) => {
+            root.iniciar-sesion(nombre, clave);
+        }
+    }
+
+    if root.sesion-iniciada : VerticalLayout {
+        width: parent.width;
+        height: parent.height;
+
+        Layout {
+            opciones: root.opciones;
+            activa: root.opcion-activa;
+            nombre-usuario: root.nombre-usuario;
+            inicial-usuario: root.inicial-usuario;
+            busqueda <=> root.busqueda;
+            opcion-seleccionada(indice) => {
+                root.opcion-seleccionada(indice);
+            }
+            busqueda-editada(texto) => {
+                root.busqueda-editada(texto);
+            }
+            cerrar-sesion => {
+                root.cerrar-sesion();
+            }
+        }
+
+        Body {
+            vertical-stretch: 1;
+            seccion: root.opciones[root.opcion-activa].id;
+            titulo: root.opciones[root.opcion-activa].titulo;
+            progreso: root.progreso-transicion;
+            direccion: root.direccion-transicion;
+            juegos: root.juegos;
+            iniciar-juego(indice) => {
+                root.iniciar-juego(indice);
+            }
+            abrir-juego(indice, x, y, ancho, alto) => {
+                root.abrir-juego(indice, x, y, ancho, alto);
+            }
+        }
+    }
+
+    if root.diseno-abierto == 1 : Game01 {
+        x: root.origen-x * (1 - root.progreso-apertura);
+        y: root.origen-y * (1 - root.progreso-apertura);
+        width: root.origen-ancho + (root.width - root.origen-ancho) * root.progreso-apertura;
+        height: root.origen-alto + (root.height - root.origen-alto) * root.progreso-apertura;
+        border-radius: 12px * (1 - root.progreso-apertura);
+        juego: root.juegos[root.juego-abierto];
+        progreso: root.progreso-apertura;
+        volver => {
+            root.cerrar-juego();
+        }
+        jugar => {
+            root.iniciar-juego(root.juego-abierto);
+        }
+    }
+
+    if root.diseno-abierto == 2 : Game02 {
+        x: root.origen-x * (1 - root.progreso-apertura);
+        y: root.origen-y * (1 - root.progreso-apertura);
+        width: root.origen-ancho + (root.width - root.origen-ancho) * root.progreso-apertura;
+        height: root.origen-alto + (root.height - root.origen-alto) * root.progreso-apertura;
+        border-radius: 12px * (1 - root.progreso-apertura);
+        juego: root.juegos[root.juego-abierto];
+        progreso: root.progreso-apertura;
+        volver => {
+            root.cerrar-juego();
+        }
+        jugar => {
+            root.iniciar-juego(root.juego-abierto);
+        }
+    }
+}

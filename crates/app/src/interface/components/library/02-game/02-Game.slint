@@ -1,0 +1,546 @@
+import { Estilo } from "../../../../ui/LoginStyle.slint";
+import { Game02Estilo } from "02-GameStyle.slint";
+import { Juego } from "../../../module/body/LibraryBody/LibraryBody.slint";
+
+component Dato inherits Rectangle {
+    in property <string> etiqueta;
+    in property <string> valor;
+    in property <color> acento;
+    in property <bool> vivo;
+    in property <float> pulso;
+
+    border-radius: Game02Estilo.radio-panel;
+    background: Estilo.noche.transparentize(0.35);
+    border-width: 1px;
+    border-color: root.vivo ? root.acento.transparentize(0.5) : Estilo.borde;
+
+    VerticalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        alignment: center;
+        spacing: 6px;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            if root.vivo : VerticalLayout {
+                alignment: center;
+
+                Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 4px;
+                    background: Estilo.viento;
+                    opacity: 0.5 + 0.5 * root.pulso;
+                }
+            }
+
+            Text {
+                text: root.etiqueta;
+                color: Estilo.texto-suave;
+                font-size: 11px;
+                letter-spacing: 1px;
+            }
+        }
+
+        Text {
+            text: root.valor == "" ? "—" : root.valor;
+            color: Estilo.marfil;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+    }
+}
+
+component Pestana inherits Rectangle {
+    in property <string> texto;
+    in property <bool> activa;
+    in property <color> acento;
+    callback pulsada();
+
+    width: etiqueta.preferred-width + 8px;
+    height: 26px;
+
+    etiqueta := Text {
+        x: 0;
+        text: root.texto;
+        color: root.activa || area.has-hover ? Estilo.marfil : Estilo.texto-suave;
+        font-size: 11px;
+        letter-spacing: 2px;
+    }
+
+    Rectangle {
+        x: 0;
+        y: parent.height - 2px;
+        width: root.activa ? etiqueta.preferred-width : 0px;
+        height: 2px;
+        background: root.acento;
+        animate width { duration: 200ms; easing: ease-out; }
+    }
+
+    area := TouchArea {
+        mouse-cursor: MouseCursor.pointer;
+        clicked => {
+            root.pulsada();
+        }
+    }
+}
+
+component Campo inherits VerticalLayout {
+    in property <string> etiqueta;
+    in property <string> valor;
+
+    spacing: 4px;
+
+    Text {
+        text: root.etiqueta;
+        color: Estilo.texto-suave;
+        font-size: 10px;
+        letter-spacing: 1px;
+    }
+
+    Text {
+        text: root.valor == "" ? "—" : root.valor;
+        color: Estilo.marfil;
+        font-size: 13px;
+    }
+}
+
+export component Game02 inherits Rectangle {
+    in property <Juego> juego;
+    in property <float> progreso;
+    callback volver();
+    callback jugar();
+
+    property <float> interfaz: Math.clamp((root.progreso - 0.55) / 0.45, 0, 1);
+    property <float> cursor-x: area.has-hover ? area.mouse-x / root.width - 0.5 : 0;
+    property <float> cursor-y: area.has-hover ? area.mouse-y / root.height - 0.5 : 0;
+    property <bool> tiene-banner: root.juego.banner.width > 0;
+    property <bool> tiene-logo: root.juego.logo.width > 0;
+    property <bool> tiene-personaje: root.juego.personaje.width > 0;
+    property <float> tiempo: animation-tick() / 1ms;
+    property <float> pulso: 0.5 + 0.5 * Math.sin(root.tiempo * 0.25deg);
+    property <int> pestana: 0;
+    property <length> inicio-inferior: root.height - Game02Estilo.margen-inferior - Game02Estilo.alto-panel - Game02Estilo.separacion - Game02Estilo.alto-datos;
+    property <length> ancho-contenido: root.width - Game02Estilo.margen * 2;
+    property <string> detalle: root.juego.ultima-vez + (root.juego.ultima-vez != "" && root.juego.horas != "" ? " · " : "") + root.juego.horas;
+
+    background: Estilo.noche;
+    clip: true;
+
+    area := TouchArea {
+        width: parent.width;
+        height: parent.height;
+    }
+
+    Image {
+        property <length> extra-x: root.width * Game02Estilo.paralaje-fondo;
+        property <length> extra-y: root.height * Game02Estilo.paralaje-fondo;
+        x: -self.extra-x / 2 - root.cursor-x * self.extra-x;
+        y: -self.extra-y / 2 - root.cursor-y * self.extra-y;
+        width: root.width + self.extra-x;
+        height: root.height + self.extra-y;
+        source: root.tiene-banner ? root.juego.banner : root.juego.portada;
+        image-fit: cover;
+        animate x, y { duration: 220ms; easing: ease-out; }
+    }
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: @linear-gradient(90deg, #0D1A1EE6 0%, #0D1A1E99 40%, #0D1A1E00 72%);
+    }
+
+    Rectangle {
+        width: parent.width;
+        height: parent.height;
+        background: @linear-gradient(180deg, #0D1A1E00 30%, #0D1A1ED9 60%, #0D1A1EFA 100%);
+    }
+
+    Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: 1000;
+        viewbox-height: 600;
+        stroke: Estilo.viento;
+        stroke-width: 1.5px;
+        opacity: (0.25 + 0.15 * Math.sin(root.tiempo * 0.02deg)) * root.interfaz;
+        commands: "M 0 160 C 200 100 320 260 520 190 S 820 120 1000 170 M 0 250 C 180 210 360 320 560 260";
+    }
+
+    for i in 10 : Path {
+        property <float> fase: Math.mod(i * 0.37, 1.0);
+        property <float> avance: Math.mod(root.tiempo / (16000 + Math.mod(i * 1733, 9000)) + self.fase, 1.0);
+        x: -20px + self.avance * (root.width + 40px);
+        y: root.height * Math.mod(i * 0.61, 0.6) + Math.sin(root.tiempo * 0.03deg + i * 40deg) * 18px;
+        width: 14px;
+        height: 14px;
+        viewbox-width: 20;
+        viewbox-height: 20;
+        stroke: Estilo.semilla;
+        stroke-width: 1px;
+        commands: "M 10 20 L 10 10 M 10 10 L 4 4 M 10 10 L 16 4 M 10 10 L 10 1 M 10 10 L 2 9 M 10 10 L 18 9";
+        opacity: (0.4 + Math.mod(i * 0.23, 0.45)) * root.interfaz;
+    }
+
+    if root.tiene-personaje : Image {
+        property <length> extra: root.width * Game02Estilo.paralaje-personaje;
+        width: root.width * Game02Estilo.ancho-personaje;
+        height: root.height * 1.08;
+        x: root.width - self.width + root.width * 0.02 - root.cursor-x * self.extra + (1 - root.interfaz) * Game02Estilo.desplazamiento-entrada;
+        y: root.height - self.height + root.height * 0.06 - root.cursor-y * self.extra * 0.5;
+        source: root.juego.personaje;
+        image-fit: contain;
+        opacity: root.interfaz;
+        animate x, y { duration: 220ms; easing: ease-out; }
+    }
+
+    Rectangle {
+        x: Game02Estilo.margen - (1 - root.interfaz) * Game02Estilo.desplazamiento-entrada;
+        y: 76px;
+        width: root.width * 0.5;
+        height: root.inicio-inferior - 76px - Game02Estilo.separacion;
+        opacity: root.interfaz;
+
+        VerticalLayout {
+            alignment: end;
+            spacing: 14px;
+
+            if root.tiene-logo : Image {
+                width: Game02Estilo.ancho-logo;
+                height: Game02Estilo.alto-logo;
+                source: root.juego.logo;
+                image-fit: contain;
+            }
+
+            if !root.tiene-logo : Text {
+                text: root.juego.titulo;
+                color: Estilo.marfil;
+                font-size: Game02Estilo.tamano-titulo;
+                letter-spacing: 8px;
+            }
+
+            if root.juego.generos != "" : Text {
+                text: root.juego.generos;
+                color: Estilo.marfil;
+                font-size: 12px;
+                letter-spacing: 3px;
+            }
+
+            HorizontalLayout {
+                alignment: start;
+
+                Rectangle {
+                    width: 80px;
+                    height: 2px;
+                    background: root.juego.acento;
+                }
+            }
+
+            if root.detalle != "" : Text {
+                text: root.detalle;
+                color: Estilo.texto-suave;
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+
+            HorizontalLayout {
+                alignment: start;
+
+                Rectangle {
+                    width: Game02Estilo.ancho-jugar;
+                    height: Game02Estilo.alto-jugar;
+                    border-radius: Estilo.radio;
+                    background: area-jugar.pressed ? root.juego.acento.darker(0.15) : area-jugar.has-hover ? root.juego.acento.brighter(0.1) : root.juego.acento;
+                    drop-shadow-blur: area-jugar.has-hover ? 24px : 12px;
+                    drop-shadow-color: root.juego.acento.transparentize(0.5);
+                    animate background, drop-shadow-blur { duration: 180ms; }
+
+                    HorizontalLayout {
+                        alignment: center;
+                        spacing: 12px;
+
+                        VerticalLayout {
+                            alignment: center;
+
+                            Path {
+                                width: 16px;
+                                height: 16px;
+                                viewbox-width: 24;
+                                viewbox-height: 24;
+                                fill: Estilo.tinta;
+                                commands: "M 6 3 L 21 12 L 6 21 Z";
+                            }
+                        }
+
+                        Text {
+                            text: "JUGAR";
+                            color: Estilo.tinta;
+                            font-size: 16px;
+                            letter-spacing: 4px;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    area-jugar := TouchArea {
+                        mouse-cursor: MouseCursor.pointer;
+                        clicked => {
+                            root.jugar();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        x: Game02Estilo.margen;
+        y: root.inicio-inferior + (1 - root.interfaz) * 30px;
+        width: root.ancho-contenido;
+        height: Game02Estilo.alto-datos;
+        spacing: Game02Estilo.separacion;
+        opacity: root.interfaz;
+
+        Dato {
+            etiqueta: "TIEMPO TOTAL";
+            valor: root.juego.tiempo-total;
+            acento: root.juego.acento;
+        }
+
+        Dato {
+            etiqueta: "ÚLTIMA SESIÓN";
+            valor: root.juego.ultima-sesion;
+            acento: root.juego.acento;
+        }
+
+        Dato {
+            etiqueta: "SESIONES";
+            valor: root.juego.sesiones;
+            acento: root.juego.acento;
+        }
+
+        Dato {
+            etiqueta: "EN VIVO";
+            valor: root.juego.en-vivo;
+            acento: root.juego.acento;
+            vivo: true;
+            pulso: root.pulso;
+        }
+    }
+
+    HorizontalLayout {
+        x: Game02Estilo.margen;
+        y: root.height - Game02Estilo.margen-inferior - Game02Estilo.alto-panel + (1 - root.interfaz) * 40px;
+        width: root.ancho-contenido;
+        height: Game02Estilo.alto-panel;
+        spacing: Game02Estilo.separacion;
+        opacity: root.interfaz;
+
+        Rectangle {
+            width: root.ancho-contenido * Game02Estilo.ancho-constelacion;
+            border-radius: Game02Estilo.radio-panel;
+            background: Estilo.noche.transparentize(0.35);
+            border-width: 1px;
+            border-color: Estilo.borde;
+
+            Text {
+                x: 18px;
+                y: 14px;
+                text: "CONSTELACIÓN DE SESIONES";
+                color: Estilo.texto-suave;
+                font-size: 11px;
+                letter-spacing: 2px;
+            }
+
+            cielo := Rectangle {
+                x: 18px;
+                y: 38px;
+                width: parent.width - 36px;
+                height: parent.height - 52px;
+
+                for estrella[i] in root.juego.estrellas : Path {
+                    property <int> siguiente: Math.min(i + 1, root.juego.estrellas.length - 1);
+                    x: 0;
+                    y: 0;
+                    width: cielo.width;
+                    height: cielo.height;
+                    viewbox-width: cielo.width / 1px;
+                    viewbox-height: cielo.height / 1px;
+                    visible: i < root.juego.estrellas.length - 1;
+                    stroke: Estilo.viento;
+                    stroke-width: 1px;
+                    opacity: 0.45;
+                    commands: "M \{estrella.x * cielo.width / 100px} \{estrella.y * cielo.height / 100px} L \{root.juego.estrellas[self.siguiente].x * cielo.width / 100px} \{root.juego.estrellas[self.siguiente].y * cielo.height / 100px}";
+                }
+
+                for estrella[i] in root.juego.estrellas : Rectangle {
+                    property <length> diametro: 4px + estrella.tamano * 9px;
+                    x: estrella.x * cielo.width / 100 - self.diametro / 2;
+                    y: estrella.y * cielo.height / 100 - self.diametro / 2;
+                    width: self.diametro;
+                    height: self.diametro;
+                    border-radius: self.diametro / 2;
+                    background: estrella.ultima ? root.juego.acento : Estilo.semilla;
+                    opacity: estrella.ultima ? 0.6 + 0.4 * root.pulso : 0.85;
+                    drop-shadow-blur: estrella.ultima ? 12px : 4px;
+                    drop-shadow-color: estrella.ultima ? root.juego.acento : Estilo.semilla.transparentize(0.5);
+                }
+
+                if root.juego.estrellas.length == 0 : Text {
+                    text: "Juega para encender tu primera estrella";
+                    color: Estilo.texto-suave;
+                    font-size: 12px;
+                }
+            }
+        }
+
+        Rectangle {
+            border-radius: Game02Estilo.radio-panel;
+            background: Estilo.noche.transparentize(0.35);
+            border-width: 1px;
+            border-color: Estilo.borde;
+
+            VerticalLayout {
+                padding: 18px;
+                spacing: 14px;
+
+                HorizontalLayout {
+                    spacing: 22px;
+                    alignment: start;
+
+                    Pestana {
+                        texto: "RESUMEN";
+                        activa: root.pestana == 0;
+                        acento: root.juego.acento;
+                        pulsada => {
+                            root.pestana = 0;
+                        }
+                    }
+
+                    Pestana {
+                        texto: "LANZAMIENTO";
+                        activa: root.pestana == 1;
+                        acento: root.juego.acento;
+                        pulsada => {
+                            root.pestana = 1;
+                        }
+                    }
+
+                    Pestana {
+                        texto: "NOTAS";
+                        activa: root.pestana == 2;
+                        acento: root.juego.acento;
+                        pulsada => {
+                            root.pestana = 2;
+                        }
+                    }
+                }
+
+                if root.pestana == 0 : VerticalLayout {
+                    spacing: 14px;
+
+                    Text {
+                        text: root.juego.descripcion == "" ? "—" : root.juego.descripcion;
+                        color: Estilo.marfil;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 24px;
+
+                        Campo {
+                            etiqueta: "DESARROLLADOR";
+                            valor: root.juego.desarrollador;
+                        }
+
+                        Campo {
+                            etiqueta: "LANZAMIENTO";
+                            valor: root.juego.lanzamiento;
+                        }
+
+                        Campo {
+                            etiqueta: "PLATAFORMA";
+                            valor: root.juego.plataforma;
+                        }
+
+                        Campo {
+                            etiqueta: "TAMAÑO";
+                            valor: root.juego.tamano;
+                        }
+                    }
+                }
+
+                if root.pestana == 1 : VerticalLayout {
+                    spacing: 14px;
+                    alignment: start;
+
+                    Campo {
+                        etiqueta: "EJECUTABLE";
+                        valor: root.juego.ejecutable;
+                    }
+
+                    Campo {
+                        etiqueta: "ARGUMENTOS";
+                        valor: root.juego.argumentos;
+                    }
+                }
+
+                if root.pestana == 2 : Text {
+                    text: root.juego.notas == "" ? "Sin notas todavía" : root.juego.notas;
+                    color: root.juego.notas == "" ? Estilo.texto-suave : Estilo.marfil;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        x: 28px;
+        y: 24px;
+        width: fila-volver.preferred-width;
+        height: Game02Estilo.alto-volver;
+        border-radius: self.height / 2;
+        background: area-volver.has-hover ? Estilo.noche.transparentize(0.2) : Estilo.noche.transparentize(0.45);
+        border-width: 1px;
+        border-color: root.juego.acento.transparentize(0.5);
+        opacity: root.interfaz;
+        animate background { duration: 150ms; }
+
+        fila-volver := HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 16px;
+            spacing: 8px;
+
+            VerticalLayout {
+                alignment: center;
+
+                Path {
+                    width: 14px;
+                    height: 14px;
+                    viewbox-width: 24;
+                    viewbox-height: 24;
+                    stroke: Estilo.marfil;
+                    stroke-width: 2px;
+                    commands: "M 15 5 L 8 12 L 15 19";
+                }
+            }
+
+            Text {
+                text: "Biblioteca";
+                color: Estilo.marfil;
+                font-size: 12px;
+                vertical-alignment: center;
+            }
+        }
+
+        area-volver := TouchArea {
+            mouse-cursor: MouseCursor.pointer;
+            clicked => {
+                root.volver();
+            }
+        }
+    }
+}

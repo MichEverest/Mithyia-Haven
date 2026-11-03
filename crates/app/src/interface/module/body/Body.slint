@@ -1,0 +1,79 @@
+import { Estilo } from "../../../ui/LoginStyle.slint";
+import { BodyEstilo } from "BodyStyle.slint";
+import { LibraryBody, Juego } from "LibraryBody/LibraryBody.slint";
+
+export component Body inherits Rectangle {
+    in property <string> seccion;
+    in property <string> titulo;
+    in property <float> progreso: 1;
+    in property <int> direccion: 1;
+    in property <[Juego]> juegos;
+    callback iniciar-juego(int);
+    callback abrir-juego(int, length, length, length, length);
+
+    background: BodyEstilo.fondo;
+    clip: true;
+
+    Rectangle {
+        x: root.direccion * (1 - root.progreso) * BodyEstilo.desplazamiento;
+        y: 0;
+        width: parent.width;
+        height: parent.height;
+        opacity: root.progreso;
+
+        VerticalLayout {
+            padding: BodyEstilo.margen;
+            spacing: 10px;
+
+            Text {
+                text: root.titulo;
+                color: Estilo.marfil;
+                font-size: BodyEstilo.tamano-titulo;
+                letter-spacing: 3px;
+            }
+
+            HorizontalLayout {
+                alignment: start;
+
+                Rectangle {
+                    width: 80px;
+                    height: 1px;
+                    background: Estilo.oro;
+                }
+            }
+
+            Rectangle {
+                height: 14px;
+            }
+
+            Rectangle {
+                vertical-stretch: 1;
+
+                if root.seccion == "biblioteca" : LibraryBody {
+                    width: parent.width;
+                    height: parent.height;
+                    juegos: root.juegos;
+                    iniciar-juego(indice) => {
+                        root.iniciar-juego(indice);
+                    }
+                    abrir-juego(indice, x, y, ancho, alto) => {
+                        root.abrir-juego(indice, x, y, ancho, alto);
+                    }
+                }
+            }
+        }
+    }
+
+    for i in 14 : Rectangle {
+        property <float> avance: Math.clamp(root.progreso * 1.6 - Math.mod(i * 0.07, 0.6), 0, 1);
+        property <length> recorrido: root.width + self.width;
+        visible: root.progreso < 1;
+        x: root.direccion > 0 ? root.width - self.avance * self.recorrido : -self.width + self.avance * self.recorrido;
+        y: root.height * Math.mod(i * 0.137 + 0.05, 0.95);
+        width: 60px + Math.mod(i * 37, 90) * 1px;
+        height: BodyEstilo.grosor-rafaga;
+        border-radius: self.height / 2;
+        background: Estilo.semilla;
+        opacity: 0.4 * Math.sin(self.avance * 180deg);
+    }
+}
